@@ -2,13 +2,25 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/hal.h"
+#include "esphome/core/helpers.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/voltage_sampler/voltage_sampler.h"
+#include "esphome/core/log.h"
+#include <cmath>
 
 namespace esphome {
-namespace ct_clamp {
+namespace filtered_ct_clamp {
 
-class CTClampSensor : public sensor::Sensor, public PollingComponent {
+// sampling rate is ~ 4.5kHz
+#define SAMPLE_RATE 4500
+
+// filter cutoff to 100Hz
+#define CUTOFF 100
+
+// minimum current threshold to 0.005A
+#define MIN_CURRENT 0.005
+
+class CTClampFilteredSensor : public sensor::Sensor, public PollingComponent {
  public:
   void update() override;
   void loop() override;
@@ -22,6 +34,9 @@ class CTClampSensor : public sensor::Sensor, public PollingComponent {
   void set_source(voltage_sampler::VoltageSampler *source) { source_ = source; }
 
  protected:
+  /// Low-pass filter to smooth the input signal
+  double lowPassFilter(double input);
+
   /// High Frequency loop() requester used during sampling phase.
   HighFrequencyLoopRequester high_freq_;
 
@@ -50,5 +65,5 @@ class CTClampSensor : public sensor::Sensor, public PollingComponent {
   bool is_sampling_ = false;
 };
 
-}  // namespace ct_clamp
+}  // namespace filtered_ct_clamp
 }  // namespace esphome
